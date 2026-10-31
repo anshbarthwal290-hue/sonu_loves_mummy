@@ -19,8 +19,6 @@ type Position = { x: number; y: number };
 const BURST_COLORS = ['#E8799A', '#D85C84', '#F4BCC9', '#D4AF72', '#E6CC9A', '#FFF8EE'];
 const BURST_COUNT = 36;
 
-const NO_BUTTON_RANGE = { x: 140, y: 70 };
-
 function createBurst(): Burst[] {
   return Array.from({ length: BURST_COUNT }, (_, id) => {
     const angle = (Math.PI * 2 * id) / BURST_COUNT + Math.random() * 0.4;
@@ -37,11 +35,22 @@ function createBurst(): Burst[] {
   });
 }
 
-function randomNoPosition(): Position {
-  return {
-    x: (Math.random() * 2 - 1) * NO_BUTTON_RANGE.x,
-    y: (Math.random() * 2 - 1) * NO_BUTTON_RANGE.y,
-  };
+function randomNoPosition(current: Position): Position {
+  let newX = current.x;
+  let newY = current.y;
+  for (let i = 0; i < 6; i++) {
+    const rx = (Math.random() * 2 - 1) * 150;
+    const ry = (Math.random() * 2 - 1) * 75;
+    const distFromCurrent = Math.hypot(rx - current.x, ry - current.y);
+    const distFromCenter = Math.hypot(rx, ry);
+    // Ensure it moves away from current spot and doesn't overlap center (Yes button area)
+    if (distFromCurrent > 70 && distFromCenter > 50) {
+      newX = rx;
+      newY = ry;
+      break;
+    }
+  }
+  return { x: newX, y: newY };
 }
 
 export default function FinalProposal() {
@@ -55,13 +64,17 @@ export default function FinalProposal() {
     return finale.noTaunts[(noTapCount - 1) % finale.noTaunts.length];
   }, [noTapCount]);
 
-  const handleYes = () => {
+  const handleYes = (e: React.MouseEvent | React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setBursts(createBurst());
     setAccepted(true);
   };
 
-  const handleNo = () => {
-    setNoPosition(randomNoPosition());
+  const handleNo = (e: React.MouseEvent | React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setNoPosition((prev) => randomNoPosition(prev));
     setNoTapCount((count) => count + 1);
   };
 
@@ -97,18 +110,20 @@ export default function FinalProposal() {
                   <div className="mt-12 flex w-full flex-col items-center gap-6 sm:flex-row sm:justify-center sm:gap-8">
                     <button
                       type="button"
+                      onPointerDown={handleYes}
                       onClick={handleYes}
-                      className="min-h-14 min-w-[10rem] rounded-full bg-gradient-to-r from-rose-500 to-burgundy-600 px-10 py-4 font-body text-base font-medium text-cream-50 shadow-glow transition duration-300 hover:scale-105 hover:shadow-[0_0_36px_8px_rgba(216,92,132,0.45)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-100"
+                      className="min-h-14 min-w-[10rem] cursor-pointer rounded-full bg-gradient-to-r from-rose-500 to-burgundy-600 px-10 py-4 font-body text-base font-medium text-cream-50 shadow-glow transition duration-300 hover:scale-105 hover:shadow-[0_0_36px_8px_rgba(216,92,132,0.45)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-100"
                     >
                       {finale.yesLabel}
                     </button>
 
                     <motion.button
                       type="button"
+                      onPointerDown={handleNo}
                       onClick={handleNo}
                       animate={{ x: noPosition.x, y: noPosition.y }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                      className="min-h-14 min-w-[8rem] rounded-full border border-burgundy-500/30 bg-white/70 px-8 py-4 font-body text-base text-burgundy-600 shadow-soft transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      className="min-h-14 min-w-[8rem] cursor-pointer rounded-full border border-burgundy-500/30 bg-white/70 px-8 py-4 font-body text-base text-burgundy-600 shadow-soft transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                     >
                       {noLabel}
                     </motion.button>
